@@ -7,8 +7,7 @@
     <style>
         body,
         div,
-        p,
-        buttton {
+        p{
             margin: 0px;
             padding: 0px;
         }
@@ -269,10 +268,12 @@
                         obox.style.left = (event || window.event).clientX - x + "px";
                         obox.style.top = (event || window.event).clientY - y + "px";
                         check();
+                        this.setCapture();
                     }
                     document.onmouseup = function() {
                         document.onmousemove = null;
                         document.onmouseup = null;
+                        this.releaseCapture();
                     }
                     return false
                 }
