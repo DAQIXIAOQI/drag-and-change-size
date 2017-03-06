@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title> 可拖拽窗口 </title>
+    <style>
+        body,
+        div,
+        p,
+        buttton {
+            margin: 0px;
+            padding: 0px;
+        }
+        body {
+            background-color: gray;
+        }
+        div#miniziation {
+            width: 21px;
+            height: 19px;
+            background: lightgray url(image/tool.png) no-repeat;
+            position: absolute;
+            top: 50px;
+            left: 48%;
+            display: none;
+        }
+        
+        div#miniziation:hover {
+            background-position: 0 -29px;
+        }
+        
+        div#box {
+            width: 400px;
+            height: 200px;
+            min-height: 200px;
+            min-width: 400px;
+            background-color: lightgray;
+            border: 1px black solid;
+            border-radius: 8px;
+            position: absolute;
+            left: 300px;
+            top: 200px;
+            overflow: hidden;
+            box-shadow: 0px 0px 10px black;
+        }
+        
+        div#box-top {
+            width: 95%;
+            height: 30px;
+            margin: auto;
+            border-bottom: 1px solid gray;
+            cursor: move;
+        }
+        
+        div#box-top p {
+            position: relative;
+            line-height: 20px;
+            height: 20px;
+            width: 250px;
+            padding: 5px;
+            float: left;
+        }
+        
+        div#box-top div {
+            position: relative;
+            background: url(image/tool.png) no-repeat;
+            width: 21px;
+            height: 21px;
+            margin: 5px 0px 0px 10px;
+            float: right;
+            cursor: pointer;
+            z-index: 2;
+        }
+        
+        div#box-top div#min {
+            background-position: -29px 0;
+        }
+        
+        div#box-top div#min:hover {
+            background-position: -29px -29px;
+            ;
+        }
+        
+        div#box-top div#max {
+            background-position: -60px 0;
+        }
+        
+        div#box-top div#max:hover {
+            background-position: -60px -29px;
+        }
+        
+        div#box-top div#close {
+            background-position: -89px 0;
+        }
+        
+        div#box-top div#close:hover {
+            background-position: -89px -29px;
+            ;
+        }
+        
+        div#box-main {
+            width: 95%;
+            margin: auto;
+        }
+        
+        div.check {
+            position: absolute;
+        }
+        
+        div#check-top {
+            width: 98%;
+            height: 3px;
+            left: 1%;
+            top: 0px;
+            cursor: n-resize;
+        }
+        
+        div#check-bottom {
+            width: 98%;
+            height: 3px;
+            left: 1%;
+            bottom: 0px;
+            cursor: n-resize;
+        }
+        
+        div#check-left {
+            height: 98%;
+            width: 3px;
+            top: 1%;
+            left: 0;
+            cursor: e-resize;
+        }
+        
+        div#check-right {
+            height: 98%;
+            width: 3px;
+            top: 1%;
+            right: 0px;
+            cursor: e-resize;
+        }
+        
+        div#check-tl {
+            top: 0px;
+            left: 0px;
+            cursor: nw-resize;
+        }
+        
+        div#check-tr,
+        div#check-tl,
+        div#check-bl,
+        div#check-br {
+            width: 15px;
+            height: 15px;
+            background-color: lightgray;
+        }
+        
+        div#check-tr {
+            top: 0px;
+            right: 0px;
+            cursor: nesw-resize;
+        }
+        
+        div#check-bl {
+            bottom: 0px;
+            left: 0px;
+            cursor: nesw-resize;
+        }
+        
+        div#check-br {
+            background: url(image/resize.png) no-repeat;
+            right: 0px;
+            bottom: 0px;
+            cursor: nw-resize;
+        }
+
+    </style>
+    <script src="mylibrary.js" type="text/javascript"></script>
+    <script>
+        window.onload = function() {
+            var obox = document.getElementById("box");
+            var oboxTop = document.getElementById("box-top");
+            var obtnmin = document.getElementById("min");
+            var obtnmax = document.getElementById("max");
+            var obtnclose = document.getElementById("close");
+            var ominiziation = document.getElementById("miniziation");
+            var client = [document.documentElement.clientWidth, document.documentElement.clientHeight];
+            var oldleft = oldtop = oldwidth = oldheight = 0;
+            var checktl = document.getElementById("check-tl");
+            var checkleft = document.getElementById("check-left");
+            var checktop = document.getElementById("check-top");
+            var checkright = document.getElementById("check-right");
+            var checkbottom = document.getElementById("check-bottom");
+            var checktr = document.getElementById("check-tr");
+            var checkbl = document.getElementById("check-bl");
+            var checkbr = document.getElementById("check-br");
+            var minx = parseInt(getStyle(obox, "min-width"));
+            var miny = parseInt(getStyle(obox, "min-height"));
+            var Bmax = false; //判断窗口是否最大化
+            //初始调用更新
+            update();
+            //八个方向的拖拽
+            resize(checktl, true, false, false, true);
+            resize(checkleft, false, false, false, true);
+            resize(checktop, true, false, false, false);
+            resize(checkright, false, true, false, false);
+            resize(checkbottom, false, false, true, false);
+            resize(checktr, true, true, false, false);
+            resize(checkbl, false, false, true, true);
+            resize(checkbr, false, true, true, false);
+            //当窗口大小更变时，改变窗口变量值
+            window.onresize = function() {
+                    client = [document.documentElement.clientWidth, document.documentElement.clientHeight];
+                }
+                //横纵向拖拽函数
+            function resize(oparent, top, right, bottom, left) {
+                oparent.onmousedown = function(event) {
+                    update();
+                    var ool = oldleft;
+                    var oot = oldtop;
+                    var oow = oldwidth;
+                    var ooh = oldheight;
+                    document.onmousemove = function(event) {
+                        var event = event || window.event;
+                        var nx = oldleft - event.clientX;
+                        var ny = oldtop - event.clientY;
+                        left ? (obox.style.left = event.clientX + "px") : " ";
+                        top ? (obox.style.top = event.clientY + "px") : " ";
+                        left ? (obox.style.width = oldwidth + nx + "px") : " ";
+                        top ? (obox.style.height = oldheight + ny + "px") : " ";
+                        right ? (obox.style.width = -nx + "px") : " ";
+                        bottom ? (obox.style.height = -ny + "px") : " ";
+                        update();
+                        //限制拉伸范围
+                        if (oldleft < 0) {
+                            obox.style.left = 0;
+                            obox.style.width = oow + ool + "px";
+                        }
+                        if (oldtop < 0) {
+                            obox.style.top = 0;
+                            obox.style.height = oot + ooh + "px";
+                        }
+                        if ((client[0] - parseInt(getStyle(obox, "borderBottomWidth")) * 2) < (oldleft + oldwidth)) {
+                            obox.style.width = client[0] - oldleft - parseInt(getStyle(obox, "borderBottomWidth")) * 2 + "px";
+                        }
+                        if ((client[1] - parseInt(getStyle(obox, "borderBottomWidth")) * 2) < (oldtop + oldheight)) {
+                            obox.style.height = client[1] - oldtop - parseInt(getStyle(obox, "borderBottomWidth")) * 2 + "px";
+                        }
+                        //限制窗口最小值
+                        oldleft > (ool + oow - minx) ? obox.style.left = ool + oow - minx + "px" : "";
+                        oldtop > (oot + ooh - miny) ? obox.style.top = oot + ooh - miny + "px" : "";
+                        update();
+                        oparent.setCapture();
+                    }
+                    document.onmouseup = function() {
+                        update();
+                        console.log("3a" + oldleft + "." + oldtop + "." + oldwidth + "." + oldheight);
+                        document.onmousemove = null;
+                        document.onmouseup = null;
+                        oparent.releaseCapture();
+                    }
+                    return false;
+                }
+            }
+            //整体拖拽效果
+            oboxTop.onmousedown = function(event) {
+                    var x = (event || window.event).clientX - obox.offsetLeft;
+                    var y = (event || window.event).clientY - obox.offsetTop;
+                    document.onmousemove = function(event) {
+                        obox.style.left = (event || window.event).clientX - x + "px";
+                        obox.style.top = (event || window.event).clientY - y + "px";
+                        check();
+                    }
+                    document.onmouseup = function() {
+                        document.onmousemove = null;
+                        document.onmouseup = null;
+                    }
+                    return false
+                }
+                //三个按钮的效果
+            obtnmin.onclick = obtnclose.onclick = function() {
+                obox.style.display = "none";
+                ominiziation.style.display = "block";
+            }
+            ominiziation.onclick = function() {
+                obox.style.display = "block";
+                ominiziation.style.display = "none";
+            }
+            obtnmax.onclick = function() {
+                    if (!Bmax) {
+                        update();
+                        obox.style.width = client[0] - parseInt(getStyle(obox, "borderBottomWidth")) * 2 + "px";
+                        obox.style.height = client[1] - parseInt(getStyle(obox, "borderBottomWidth")) * 2 + "px";
+                        obox.style.left = obox.style.top = 0;
+                        this.style.backgroundPosition = "-149px 0px";
+                        obtnmax.onmouseover = function() {
+                            this.style.backgroundPosition = "-149px -29px";
+                        }
+                        obtnmax.onmouseout = function() {
+                            this.style.backgroundPosition = "-149px 0px";
+                        }
+                        Bmax = true;
+                    } else {
+                        obox.style.left = oldleft + "px";
+                        obox.style.top = oldtop + "px";
+                        obox.style.width = oldwidth + "px";
+                        obox.style.height = oldheight + "px";
+                        this.style.backgroundPosition = "-60px 0px";
+                        obtnmax.onmouseover = function() {
+                            this.style.backgroundPosition = "-60px -29px";
+                        }
+                        obtnmax.onmouseout = function() {
+                            this.style.backgroundPosition = "-60px 0px";
+                        }
+                        Bmax = false;
+                    }
+                }
+                //限制窗口超出浏览器范围
+            function check() {
+                parseInt(getStyle(obox, "left")) < 0 ? obox.style.left = 0 : "";
+                parseInt(getStyle(obox, "left")) > (client[0] - obox.offsetWidth) ? obox.style.left = (client[0] - obox.offsetWidth) + "px" : "";
+                parseInt(getStyle(obox, "top")) < 0 ? obox.style.top = 0 : "";
+                parseInt(getStyle(obox, "top")) > (client[1] - obox.offsetHeight) ? obox.style.top = (client[1] - obox.offsetHeight) + "px" : "";
+
+            }
+            //更新窗口left/top/width/heigth
+            function update() {
+                oldleft = parseInt(getStyle(obox, "left"));
+                oldtop = parseInt(getStyle(obox, "top"));
+                oldwidth = parseInt(getStyle(obox, "width"));
+                oldheight = parseInt(getStyle(obox, "height"));
+                //重点！必须要做判定，否则在IE上会达不到预期效果。原因是由于各浏览器对min-height/min-width支持的不同
+                if (oldwidth <= 400) oldwidth = 400;
+                if (oldheight <= 200) oldheight = 200;
+            }
+        }
+
+    </script>
+
+</head>
+
+<body>
+    <div id="miniziation"></div>
+    <div id="box">
+        <div id="box-top">
+            <p>这是一个可以拖拽的窗口</p>
+            <div id="close"></div>
+            <div id="max"></div>
+            <div id="min"></div>
+        </div>
+        <div id="box-main">
+            1.此窗口可被拖拽.
+            <br> 2.可以通过八个方向改变窗口的大小.
+            <br> 3.此窗口最小宽度为400px，最小高度为200px.
+        </div>
+        <div class="check" id="check-br"></div>
+        <div class="check" id="check-top"></div>
+        <div class="check" id="check-bottom"></div>
+        <div class="check" id="check-left"></div>
+        <div class="check" id="check-right"></div>
+        <div class="check" id="check-tr"></div>
+        <div class="check" id="check-tl"></div>
+        <div class="check" id="check-bl"></div>
+    </div>
+</body>
+
+</html>
